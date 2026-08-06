@@ -9,6 +9,7 @@ The first version is a local, terminal-only game of Yahtzee for one human player
 1. A new game creates five random dice. They are displayed but do not count as a roll.
 2. The human player presses `r` to make the first roll.
 3. A turn allows at most three rolls. Unlocked dice are rerolled; locked dice are kept.
+   Each roll briefly cycles the faces of unlocked dice before showing the settled result.
 4. The human can toggle dice with `1` through `5`, move through open score categories with the arrow keys, and confirm a category with Enter.
 5. After the human scores, the opponent takes its turn automatically. The opponent evaluates legal hold choices by expected value and selects a score using category opportunity costs.
 6. Dice values carry into the next turn. Lock state, roll count, and the rolled flag reset; the next first roll rerolls all unlocked dice.
@@ -49,7 +50,6 @@ Pressing `q` once arms quit confirmation. Pressing `q` again quits. Any other ke
 ## Deliberate non-goals
 
 - Difficulty levels.
-- Roll animations.
 - Sound.
 - Game persistence or replay files.
 - Multiplayer or network play.

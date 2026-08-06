@@ -17,6 +17,7 @@ func Run(input *os.File, output io.Writer) error {
 
 	reader := NewKeyReader(input)
 	renderer := NewRenderer(os.Getenv("NO_COLOR") == "")
+	animator := NewRollAnimator()
 
 	for {
 		current := game.New()
@@ -24,7 +25,7 @@ func Run(input *os.File, output io.Writer) error {
 			return err
 		}
 
-		quit, err := playGame(current, reader, terminal, renderer)
+		quit, err := playGame(current, reader, terminal, renderer, animator)
 		if err != nil {
 			return err
 		}
@@ -66,7 +67,7 @@ func Run(input *os.File, output io.Writer) error {
 	}
 }
 
-func playGame(current *game.Game, reader *KeyReader, terminal *Terminal, renderer Renderer) (bool, error) {
+func playGame(current *game.Game, reader *KeyReader, terminal *Terminal, renderer Renderer, animator *RollAnimator) (bool, error) {
 	quitArmed := false
 	for current.State().Outcome == game.InProgress {
 		state := current.State()
@@ -80,9 +81,16 @@ func playGame(current *game.Game, reader *KeyReader, terminal *Terminal, rendere
 
 		if state.Turn == game.Opponent {
 			var observerErr error
+			previousState := current.State()
 			current.PlayOpponent(func() {
 				if observerErr == nil {
-					observerErr = terminal.Render(renderer.Frame(current.State(), ""))
+					currentState := current.State()
+					if currentState.Rolled && currentState.RollsLeft < previousState.RollsLeft {
+						observerErr = animator.Animate(terminal, renderer, currentState)
+					} else {
+						observerErr = terminal.Render(renderer.Frame(currentState, ""))
+					}
+					previousState = currentState
 				}
 				if observerErr == nil {
 					time.Sleep(360 * time.Millisecond)
@@ -113,7 +121,11 @@ func playGame(current *game.Game, reader *KeyReader, terminal *Terminal, rendere
 		case key.Kind == KeyRune && (key.Rune == 'q' || key.Rune == 'Q'):
 			quitArmed = true
 		case key.Kind == KeyRune && (key.Rune == 'r' || key.Rune == 'R'):
-			current.Roll()
+			if current.Roll() {
+				if err := animator.Animate(terminal, renderer, current.State()); err != nil {
+					return false, err
+				}
+			}
 		case key.Kind == KeyRune && key.Rune >= '1' && key.Rune <= '5':
 			current.ToggleLock(int(key.Rune - '1'))
 		case key.Kind == KeyUp:
