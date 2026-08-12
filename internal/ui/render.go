@@ -23,17 +23,21 @@ func NewRenderer(colors bool) Renderer {
 }
 
 func (r Renderer) Frame(state game.State, notice string) string {
-	return r.frame(state, notice, true)
+	return r.frame(state, notice, true, game.You, game.CategoryCount)
+}
+
+func (r Renderer) FrameWithScoreHighlight(state game.State, notice string, player game.Player, category game.Category) string {
+	return r.frame(state, notice, true, player, category)
 }
 
 func (r Renderer) FinalFrame(state game.State) string {
 	state.Locked = [game.DiceCount]bool{}
-	return r.frame(state, "", false)
+	return r.frame(state, "", false, game.You, game.CategoryCount)
 }
 
-func (r Renderer) frame(state game.State, notice string, includeControls bool) string {
+func (r Renderer) frame(state game.State, notice string, includeControls bool, highlightedPlayer game.Player, highlightedCategory game.Category) string {
 	left := r.leftColumn(state, notice)
-	right := r.scoreboard(state)
+	right := r.scoreboard(state, highlightedPlayer, highlightedCategory)
 	lines := make([]string, 0, len(left))
 	for i := 0; i < len(left) || i < len(right); i++ {
 		leftLine := ""
@@ -168,18 +172,18 @@ func (r Renderer) die(value int, locked bool) []string {
 	}
 }
 
-func (r Renderer) scoreboard(state game.State) []string {
+func (r Renderer) scoreboard(state game.State, highlightedPlayer game.Player, highlightedCategory game.Category) []string {
 	inner := make([]string, 0, 20)
 	inner = append(inner, r.style(fmt.Sprintf("%-17s %7s %11s", "Category", "You", "Opponent"), ansiBold))
 	inner = append(inner, r.separator())
 	for _, category := range game.Categories[:6] {
-		inner = append(inner, r.scoreRow(state, category))
+		inner = append(inner, r.scoreRow(state, category, highlightedPlayer, highlightedCategory))
 	}
 	inner = append(inner, r.separator())
 	inner = append(inner, r.bonusRow(state))
 	inner = append(inner, r.separator())
 	for _, category := range game.Categories[6:] {
-		inner = append(inner, r.scoreRow(state, category))
+		inner = append(inner, r.scoreRow(state, category, highlightedPlayer, highlightedCategory))
 	}
 	inner = append(inner, r.separator())
 	inner = append(inner, r.totalRow(state))
@@ -193,22 +197,24 @@ func (r Renderer) scoreboard(state game.State) []string {
 	return lines
 }
 
-func (r Renderer) scoreRow(state game.State, category game.Category) string {
-	your := rightAlign(r.scoreCell(state, game.You, category), 7)
-	opponent := rightAlign(r.scoreCell(state, game.Opponent, category), 11)
+func (r Renderer) scoreRow(state game.State, category game.Category, highlightedPlayer game.Player, highlightedCategory game.Category) string {
+	your := rightAlign(r.scoreCell(state, game.You, category, highlightedPlayer, highlightedCategory), 7)
+	opponent := rightAlign(r.scoreCell(state, game.Opponent, category, highlightedPlayer, highlightedCategory), 11)
 	label := category.String()
-	if r.selectedRow(state, category) {
+	if category == highlightedCategory {
+		label = r.style(label, playerColor(highlightedPlayer))
+	} else if r.selectedScore(state, game.You, category) {
 		label = r.style(label, ansiBold)
 	}
 	return fmt.Sprintf("%s %s %s", padVisible(label, 17), your, opponent)
 }
 
-func (r Renderer) scoreCell(state game.State, player game.Player, category game.Category) string {
+func (r Renderer) scoreCell(state game.State, player game.Player, category game.Category, highlightedPlayer game.Player, highlightedCategory game.Category) string {
 	card := state.Scores[player]
 	if card.Filled[category] {
 		style := ansiDim
-		if r.selectedRow(state, category) {
-			style += ansiBold
+		if player == highlightedPlayer && category == highlightedCategory {
+			style = playerColor(player)
 		}
 		value := card.Values[category]
 		if category == game.Yahtzee && value == 50 {
@@ -219,24 +225,33 @@ func (r Renderer) scoreCell(state game.State, player game.Player, category game.
 	if state.Turn == player && state.Rolled {
 		if score, ok := card.ScoreFor(state.Dice, category); ok {
 			value := fmt.Sprintf("%d", score)
-			if state.Turn == game.You && state.HasSelection && state.Selected == category {
+			if player == game.You && r.selectedScore(state, player, category) {
 				value = "→ " + value
 			}
-			style := ansiDim
-			if player == game.You {
-				style = ansiAccent
-			}
-			if r.selectedRow(state, category) {
-				style += ansiBold
-			}
+			style := r.availableScoreStyle(state, player, category)
 			return r.style(value, style)
 		}
 	}
 	return ""
 }
 
-func (r Renderer) selectedRow(state game.State, category game.Category) bool {
-	return state.Turn == game.You && state.Rolled && state.HasSelection && state.Selected == category
+func (r Renderer) selectedScore(state game.State, player game.Player, category game.Category) bool {
+	return state.Turn == player && state.Rolled && state.HasSelection && state.Selected == category
+}
+
+func (r Renderer) availableScoreStyle(state game.State, player game.Player, category game.Category) string {
+	style := playerColor(player)
+	if player == game.You && r.selectedScore(state, player, category) {
+		style += ansiBold
+	}
+	return style
+}
+
+func playerColor(player game.Player) string {
+	if player == game.You {
+		return ansiAccent
+	}
+	return ansiYellow
 }
 
 func (r Renderer) bonusRow(state game.State) string {

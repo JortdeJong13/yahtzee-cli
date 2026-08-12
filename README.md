@@ -28,7 +28,7 @@ git push origin v0.1.0
 
 The release workflow builds macOS, Linux, and Windows binaries for amd64 and arm64, then attaches archives and checksums to the GitHub release.
 
-## Controls
+## How to play
 
 - `r`: roll
 - `1`–`5`: lock or unlock a die
@@ -36,7 +36,31 @@ The release workflow builds macOS, Linux, and Windows binaries for amd64 and arm
 - Enter: score the selected category
 - `q`, then `q` again: quit
 
-Set `NO_COLOR=1` if ANSI colors are not wanted.
+
+                                     ┌────────────────────────────────────────┐
+   ╔═══════╗           ╔═══════╗     │Category              You    Opponent   │
+   ║       ║           ║       ║     │────────────────────────────────────────│
+   ║   ●   ║           ║   ●   ║     │Ones                    3               │
+   ║       ║           ║       ║     │Twos                    0               │
+   ╚═══════╝           ╚═══════╝     │Threes                  0               │
+      [1]                 [2]        │Fours                   8               │
+             ╔═══════╗               │Fives                  15               │
+             ║ ●   ● ║               │Sixes                   0               │
+             ║       ║               │────────────────────────────────────────│
+             ║ ●   ● ║               │Bonus               15/63        0/63   │
+             ╚═══════╝               │────────────────────────────────────────│
+                [3]                  │Three of a Kind        11               │
+   ╔═══════╗           ╔═══════╗     │Four of a Kind          0          18   │
+   ║       ║           ║ ●   ● ║     │Full House           → 25               │
+   ║   ●   ║           ║       ║     │Small Straight          0               │
+   ║       ║           ║ ●   ● ║     │Large Straight          0               │
+   ╚═══════╝           ╚═══════╝     │Yahtzee                 0               │
+      [4]                 [5]        │Chance                 11               │
+                                     │────────────────────────────────────────│
+   ▶ Your turn: select a score       │TOTAL                  15          18   │
+                                     └────────────────────────────────────────┘
+   [r] roll       [1-5] lock/unlock      [↑ ↓] select score      [↵] confirm
+
 
 ## Development checks
 

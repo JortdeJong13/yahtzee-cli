@@ -69,13 +69,23 @@ func Run(input *os.File, output io.Writer) error {
 
 func playGame(current *game.Game, reader *KeyReader, terminal *Terminal, renderer Renderer, animator *RollAnimator) (bool, error) {
 	quitArmed := false
+	highlightedPlayer := game.You
+	highlightedCategory := game.Category(game.CategoryCount)
+	hasScoreHighlight := false
+	renderFrame := func(state game.State, notice string) string {
+		if hasScoreHighlight {
+			return renderer.FrameWithScoreHighlight(state, notice, highlightedPlayer, highlightedCategory)
+		}
+		return renderer.Frame(state, notice)
+	}
+
 	for current.State().Outcome == game.InProgress {
 		state := current.State()
 		notice := ""
 		if quitArmed {
 			notice = "Press q again to quit"
 		}
-		if err := terminal.Render(renderer.Frame(state, notice)); err != nil {
+		if err := terminal.Render(renderFrame(state, notice)); err != nil {
 			return false, err
 		}
 
@@ -85,10 +95,18 @@ func playGame(current *game.Game, reader *KeyReader, terminal *Terminal, rendere
 			current.PlayOpponent(func() {
 				if observerErr == nil {
 					currentState := current.State()
+					if currentState.Turn == game.Opponent && currentState.Rolled && !previousState.Rolled {
+						hasScoreHighlight = false
+					}
+					if category, ok := newlyFilledScoreCategory(previousState, currentState, game.Opponent); ok {
+						highlightedPlayer = game.Opponent
+						highlightedCategory = category
+						hasScoreHighlight = true
+					}
 					if currentState.Rolled && currentState.RollsLeft < previousState.RollsLeft {
 						observerErr = animator.Animate(terminal, renderer, currentState)
 					} else {
-						observerErr = terminal.Render(renderer.Frame(currentState, ""))
+						observerErr = terminal.Render(renderFrame(currentState, ""))
 					}
 					previousState = currentState
 				}
@@ -122,6 +140,7 @@ func playGame(current *game.Game, reader *KeyReader, terminal *Terminal, rendere
 			quitArmed = true
 		case key.Kind == KeyRune && (key.Rune == 'r' || key.Rune == 'R'):
 			if current.Roll() {
+				hasScoreHighlight = false
 				if err := animator.Animate(terminal, renderer, current.State()); err != nil {
 					return false, err
 				}
@@ -133,9 +152,29 @@ func playGame(current *game.Game, reader *KeyReader, terminal *Terminal, rendere
 		case key.Kind == KeyDown:
 			current.MoveSelection(1)
 		case key.Kind == KeyEnter:
-			current.ScoreSelected()
+			before := current.State()
+			if current.ScoreSelected() {
+				if category, ok := newlyFilledScoreCategory(before, current.State(), game.You); ok && current.State().Outcome == game.InProgress {
+					highlightedPlayer = game.You
+					highlightedCategory = category
+					hasScoreHighlight = true
+					if err := terminal.Render(renderFrame(current.State(), "")); err != nil {
+						return false, err
+					}
+					time.Sleep(500 * time.Millisecond)
+				}
+			}
 		}
 	}
 
 	return false, nil
+}
+
+func newlyFilledScoreCategory(before, after game.State, player game.Player) (game.Category, bool) {
+	for _, category := range game.Categories {
+		if !before.Scores[player].Filled[category] && after.Scores[player].Filled[category] {
+			return category, true
+		}
+	}
+	return 0, false
 }

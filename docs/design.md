@@ -40,9 +40,10 @@ The game uses a compact two-column layout. Five dice in a 5-face arrangement sit
 Colors have a single purpose each:
 
 - Green: human turn and achieved upper bonus.
-- Yellow: opponent turn.
+- Yellow: opponent turn, available opponent scores, and the most recently filled opponent score until your next first roll.
 - Cyan: locked dice.
-- Bright accent: available scores, the selected score arrow, and the text after the human turn prefix.
+- Bright accent: available human scores, selected score arrows, and recently confirmed human scores.
+- Bold: the human's selected category and score.
 - Dim gray: filled categories and unavailable actions.
 
 Pressing `q` once arms quit confirmation. Pressing `q` again quits. Any other key cancels the confirmation. A terminal does not reliably expose key-release events, so a literal hold gesture is not used.

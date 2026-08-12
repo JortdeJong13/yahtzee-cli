@@ -203,8 +203,10 @@ func (g *Game) startTurn(player Player) {
 	g.rollsLeft = MaximumRolls
 	g.rolled = false
 	g.locked = [DiceCount]bool{}
-	g.selected = 0
-	g.selectFirstOpen()
+	g.selected = CategoryCount
+	if player == You {
+		g.selectFirstOpen()
+	}
 }
 
 func (g *Game) selectFirstOpen() {
@@ -267,6 +269,9 @@ func (g *Game) MoveSelection(delta int) bool {
 }
 
 func (g *Game) ensureValidSelection() {
+	if g.turn != You {
+		return
+	}
 	available := g.scores[g.turn].AvailableCategories(g.dice, g.rolled)
 	for _, category := range available {
 		if category == g.selected {

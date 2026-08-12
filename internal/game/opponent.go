@@ -10,9 +10,6 @@ func (g *Game) PlayOpponent(observer func()) {
 	if g.outcome != InProgress || g.turn != Opponent {
 		return
 	}
-	if observer != nil {
-		observer()
-	}
 
 	evaluator := opponentEvaluator{
 		card: g.scores[Opponent],
