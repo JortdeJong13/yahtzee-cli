@@ -5,7 +5,7 @@ func (s ScoreCard) ScoreFor(dice Dice, category Category) (int, bool) {
 		return 0, false
 	}
 
-	if isYahtzee(dice) && s.Filled[Yahtzee] && s.Values[Yahtzee] == 50 {
+	if isYahtzee(dice) && s.Filled[Yahtzee] {
 		face := dice[0]
 		upper := Category(face - 1)
 		if upper <= Sixes && !s.Filled[upper] {
@@ -16,6 +16,9 @@ func (s ScoreCard) ScoreFor(dice Dice, category Category) (int, bool) {
 		}
 		if category >= ThreeOfAKind && category <= Chance {
 			return jokerScore(dice, category), true
+		}
+		if allLowerCategoriesFilled(s) && category <= Sixes && !s.Filled[category] {
+			return 0, true
 		}
 		return 0, false
 	}
@@ -72,6 +75,15 @@ func jokerScore(dice Dice, category Category) int {
 	default:
 		return diceTotal(dice)
 	}
+}
+
+func allLowerCategoriesFilled(s ScoreCard) bool {
+	for _, category := range Categories[6:] {
+		if !s.Filled[category] {
+			return false
+		}
+	}
+	return true
 }
 
 func countDice(dice Dice) [7]int {
