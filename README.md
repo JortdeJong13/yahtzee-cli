@@ -14,10 +14,12 @@ go run ./cmd/yahtzee
 
 ```sh
 go install github.com/JortdeJong13/yahtzee-cli/cmd/yahtzee@latest
-yahtzee
+"$(go env GOPATH)/bin/yahtzee"
 ```
 
-Standalone binaries are available from the [GitHub Releases](https://github.com/JortdeJong13/yahtzee-cli/releases) page.
+Go installs the binary in `$(go env GOPATH)/bin` by default. Add that directory to `PATH` if you want to run it as `yahtzee`.
+
+Standalone binaries are also available from the [GitHub Releases](https://github.com/JortdeJong13/yahtzee-cli/releases) page.
 
 To publish a new release:
 
@@ -30,13 +32,6 @@ git push origin vX.Y.Z
 The release workflow builds macOS, Linux, and Windows binaries for amd64 and arm64, then attaches archives and checksums to the GitHub release.
 
 ## How to play
-
-- `r`: roll
-- `1`–`5`: lock or unlock a die
-- Up/down arrows: select an open score category
-- Enter: score the selected category
-- `q`, then `q` again: quit
-
 
 ```text
                                      ┌────────────────────────────────────────┐
@@ -64,6 +59,11 @@ The release workflow builds macOS, Linux, and Windows binaries for amd64 and arm
    [r] roll       [1-5] lock/unlock      [↑ ↓] select score      [↵] confirm
 ```
 
+- `r`: roll
+- `1`–`5`: lock or unlock a die
+- Up/down arrows: select an open score category
+- Enter: score the selected category
+- `q`, then `q` again: quit
 
 ## Development checks
 
