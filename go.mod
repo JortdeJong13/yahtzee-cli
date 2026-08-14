@@ -1,4 +1,4 @@
-module github.com/jortdejong/yahtzee-cli
+module github.com/JortdeJong13/yahtzee-cli
 
 go 1.26
 

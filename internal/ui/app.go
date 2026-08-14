@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/jortdejong/yahtzee-cli/internal/game"
+	"github.com/JortdeJong13/yahtzee-cli/internal/game"
 )
 
 func Run(input *os.File, output io.Writer) error {

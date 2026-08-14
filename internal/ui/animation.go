@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/jortdejong/yahtzee-cli/internal/game"
+	"github.com/JortdeJong13/yahtzee-cli/internal/game"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/jortdejong/yahtzee-cli/internal/game"
+	"github.com/JortdeJong13/yahtzee-cli/internal/game"
 )
 
 const (

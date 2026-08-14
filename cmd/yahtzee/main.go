@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jortdejong/yahtzee-cli/internal/ui"
+	"github.com/JortdeJong13/yahtzee-cli/internal/ui"
 )
 
 func main() {

@@ -13,17 +13,18 @@ go run ./cmd/yahtzee
 ## Install
 
 ```sh
-go install github.com/jortdejong/yahtzee-cli/cmd/yahtzee@latest
+go install github.com/JortdeJong13/yahtzee-cli/cmd/yahtzee@latest
 yahtzee
 ```
 
-GitHub Releases will provide standalone binaries once the first release is published.
+Standalone binaries are available from the [GitHub Releases](https://github.com/JortdeJong13/yahtzee-cli/releases) page.
 
-To publish a release after the repository is on GitHub:
+To publish a new release:
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git push origin main
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 The release workflow builds macOS, Linux, and Windows binaries for amd64 and arm64, then attaches archives and checksums to the GitHub release.
@@ -37,6 +38,7 @@ The release workflow builds macOS, Linux, and Windows binaries for amd64 and arm
 - `q`, then `q` again: quit
 
 
+```text
                                      ┌────────────────────────────────────────┐
    ╔═══════╗           ╔═══════╗     │Category              You    Opponent   │
    ║       ║           ║       ║     │────────────────────────────────────────│
@@ -60,6 +62,7 @@ The release workflow builds macOS, Linux, and Windows binaries for amd64 and arm
    ▶ Your turn: select a score       │TOTAL                  15          18   │
                                      └────────────────────────────────────────┘
    [r] roll       [1-5] lock/unlock      [↑ ↓] select score      [↵] confirm
+```
 
 
 ## Development checks
