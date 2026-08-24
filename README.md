@@ -21,16 +21,6 @@ Go installs the binary in `$(go env GOPATH)/bin` by default. Add that directory 
 
 Standalone binaries are also available from the [GitHub Releases](https://github.com/JortdeJong13/yahtzee-cli/releases) page.
 
-To publish a new release:
-
-```sh
-git push origin main
-git tag vX.Y.Z
-git push origin vX.Y.Z
-```
-
-The release workflow builds macOS, Linux, and Windows binaries for amd64 and arm64, then attaches archives and checksums to the GitHub release.
-
 ## How to play
 
 ```text
@@ -64,11 +54,3 @@ The release workflow builds macOS, Linux, and Windows binaries for amd64 and arm
 - Up/down arrows: select an open score category
 - Enter: score the selected category
 - `q`, then `q` again: quit
-
-## Development checks
-
-```sh
-gofmt -w cmd/yahtzee/main.go internal/game/*.go internal/ui/*.go
-go vet ./...
-go build ./...
-```
