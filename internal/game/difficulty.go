@@ -22,14 +22,3 @@ func ParseDifficulty(value string) (Difficulty, error) {
 		return Normal, fmt.Errorf("invalid difficulty %q (want easy, normal, or expert)", value)
 	}
 }
-
-func (d Difficulty) String() string {
-	switch d {
-	case Easy:
-		return "easy"
-	case Expert:
-		return "expert"
-	default:
-		return "normal"
-	}
-}

@@ -21,6 +21,13 @@ Go installs the binary in `$(go env GOPATH)/bin` by default. Add that directory 
 
 Standalone binaries are also available from the [GitHub Releases](https://github.com/JortdeJong13/yahtzee-cli/releases) page.
 
+Upgrade an installation made with `go install` by running the install command again:
+
+```sh
+go install github.com/JortdeJong13/yahtzee-cli/cmd/yahtzee@latest
+yahtzee --version
+```
+
 The opponent uses normal difficulty by default. Choose another level with:
 
 ```sh
