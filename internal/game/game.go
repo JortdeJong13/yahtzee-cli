@@ -156,23 +156,37 @@ type State struct {
 }
 
 type Game struct {
-	dice      Dice
-	locked    [DiceCount]bool
-	turn      Player
-	rollsLeft int
-	rolled    bool
-	scores    [2]ScoreCard
-	selected  Category
-	outcome   Outcome
-	rng       *rand.Rand
+	dice        Dice
+	locked      [DiceCount]bool
+	turn        Player
+	rollsLeft   int
+	rolled      bool
+	scores      [2]ScoreCard
+	selected    Category
+	outcome     Outcome
+	rng         *rand.Rand
+	opponentRNG *rand.Rand
+	difficulty  Difficulty
 }
 
 func New() *Game {
-	return NewWithSeed(time.Now().UnixNano())
+	return NewWithDifficulty(Normal)
+}
+
+func NewWithDifficulty(difficulty Difficulty) *Game {
+	return NewWithSeedAndDifficulty(time.Now().UnixNano(), difficulty)
 }
 
 func NewWithSeed(seed int64) *Game {
-	g := &Game{rng: rand.New(rand.NewSource(seed))}
+	return NewWithSeedAndDifficulty(seed, Normal)
+}
+
+func NewWithSeedAndDifficulty(seed int64, difficulty Difficulty) *Game {
+	g := &Game{
+		rng:         rand.New(rand.NewSource(seed)),
+		opponentRNG: rand.New(rand.NewSource(seed ^ 0x5deece66d)),
+		difficulty:  difficulty,
+	}
 	for i := range g.dice {
 		g.dice[i] = g.randomDie()
 	}

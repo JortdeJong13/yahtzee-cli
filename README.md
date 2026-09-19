@@ -21,6 +21,15 @@ Go installs the binary in `$(go env GOPATH)/bin` by default. Add that directory 
 
 Standalone binaries are also available from the [GitHub Releases](https://github.com/JortdeJong13/yahtzee-cli/releases) page.
 
+The opponent uses normal difficulty by default. Choose another level with:
+
+```sh
+yahtzee --difficulty easy
+yahtzee --difficulty expert
+```
+
+Easy and normal occasionally choose a near-best move. Expert always chooses the highest-value move and is deterministic apart from the dice rolls.
+
 ## How to play
 
 ```text

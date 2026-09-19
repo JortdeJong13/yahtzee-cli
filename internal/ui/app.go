@@ -8,7 +8,7 @@ import (
 	"github.com/JortdeJong13/yahtzee-cli/internal/game"
 )
 
-func Run(input *os.File, output io.Writer) error {
+func Run(input *os.File, output io.Writer, difficulty game.Difficulty) error {
 	terminal := NewTerminal(input, output)
 	if err := terminal.Open(); err != nil {
 		return err
@@ -20,7 +20,7 @@ func Run(input *os.File, output io.Writer) error {
 	animator := NewRollAnimator()
 
 	for {
-		current := game.New()
+		current := game.NewWithDifficulty(difficulty)
 		if err := terminal.BeginGame(); err != nil {
 			return err
 		}
