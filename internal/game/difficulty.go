@@ -19,6 +19,6 @@ func ParseDifficulty(value string) (Difficulty, error) {
 	case "expert":
 		return Expert, nil
 	default:
-		return Normal, fmt.Errorf("invalid difficulty %q (want easy, normal, or expert)", value)
+		return Normal, fmt.Errorf("invalid difficulty %q (select easy, normal, or expert)", value)
 	}
 }

@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	leftWidth  = 35
-	rightWidth = 40
-	frameWidth = leftWidth + 2 + rightWidth + 2
+	leftWidth       = 35
+	rightWidth      = 40
+	scoreLabelWidth = 16
+	frameWidth      = leftWidth + 2 + rightWidth + 2
 )
 
 type Renderer struct {
@@ -174,7 +175,7 @@ func (r Renderer) die(value int, locked bool) []string {
 
 func (r Renderer) scoreboard(state game.State, highlightedPlayer game.Player, highlightedCategory game.Category) []string {
 	inner := make([]string, 0, 20)
-	inner = append(inner, r.style(fmt.Sprintf("%-17s %7s %11s", "Category", "You", "Opponent"), ansiBold))
+	inner = append(inner, r.style(fmt.Sprintf(" %-*s %7s %11s", scoreLabelWidth, "Category", "You", "Opponent"), ansiBold))
 	inner = append(inner, r.separator())
 	for _, category := range game.Categories[:6] {
 		inner = append(inner, r.scoreRow(state, category, highlightedPlayer, highlightedCategory))
@@ -206,7 +207,7 @@ func (r Renderer) scoreRow(state game.State, category game.Category, highlighted
 	} else if r.selectedScore(state, game.You, category) {
 		label = r.style(label, ansiBold)
 	}
-	return fmt.Sprintf("%s %s %s", padVisible(label, 17), your, opponent)
+	return fmt.Sprintf(" %s %s %s", padVisible(label, scoreLabelWidth), your, opponent)
 }
 
 func (r Renderer) scoreCell(state game.State, player game.Player, category game.Category, highlightedPlayer game.Player, highlightedCategory game.Category) string {
@@ -257,7 +258,7 @@ func playerColor(player game.Player) string {
 func (r Renderer) bonusRow(state game.State) string {
 	your := rightAlign(r.bonusCell(state.Scores[game.You]), 7)
 	opponent := rightAlign(r.bonusCell(state.Scores[game.Opponent]), 11)
-	return fmt.Sprintf("%-17s %s %s", "Bonus", your, opponent)
+	return fmt.Sprintf(" %-*s %s %s", scoreLabelWidth, "Bonus", your, opponent)
 }
 
 func (r Renderer) bonusCell(card game.ScoreCard) string {
@@ -271,7 +272,7 @@ func (r Renderer) bonusCell(card game.ScoreCard) string {
 func (r Renderer) totalRow(state game.State) string {
 	your := rightAlign(r.style(fmt.Sprintf("%d", state.Scores[game.You].Total()), ansiBold), 7)
 	opponent := rightAlign(r.style(fmt.Sprintf("%d", state.Scores[game.Opponent].Total()), ansiBold), 11)
-	return fmt.Sprintf("%s %s %s", padVisible(r.style("TOTAL", ansiBold), 17), your, opponent)
+	return fmt.Sprintf(" %s %s %s", padVisible(r.style("TOTAL", ansiBold), scoreLabelWidth), your, opponent)
 }
 
 func (r Renderer) separator() string {
