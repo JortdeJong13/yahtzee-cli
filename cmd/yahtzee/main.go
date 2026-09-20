@@ -17,8 +17,8 @@ var version = "devel"
 func main() {
 	var difficultyName string
 	var showHelp, showStats, showVersion bool
-	flag.StringVar(&difficultyName, "difficulty", "normal", "opponent difficulty: easy, normal, or expert")
-	flag.StringVar(&difficultyName, "d", "normal", "shorthand for --difficulty")
+	flag.StringVar(&difficultyName, "difficulty", "", "opponent difficulty: easy, normal, or expert")
+	flag.StringVar(&difficultyName, "d", "", "shorthand for --difficulty")
 	flag.BoolVar(&showStats, "stats", false, "print game statistics and exit")
 	flag.BoolVar(&showStats, "s", false, "shorthand for --stats")
 	flag.BoolVar(&showVersion, "version", false, "print version and exit")
@@ -50,10 +50,34 @@ func main() {
 		return
 	}
 
-	difficulty, err := game.ParseDifficulty(difficultyName)
-	if err != nil {
+	explicitDifficulty := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "difficulty" || f.Name == "d" {
+			explicitDifficulty = true
+		}
+	})
+
+	difficulty := game.Normal
+	if explicitDifficulty {
+		var err error
+		difficulty, err = game.ParseDifficulty(difficultyName)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "yahtzee:", err)
+			os.Exit(2)
+		}
+	} else {
+		lastDifficulty, found, err := stats.LastDifficulty()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "yahtzee:", err)
+			os.Exit(1)
+		}
+		if found {
+			difficulty = lastDifficulty
+		}
+	}
+	if err := stats.SetLastDifficulty(difficulty); err != nil {
 		fmt.Fprintln(os.Stderr, "yahtzee:", err)
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	if err := ui.Run(os.Stdin, os.Stdout, difficulty); err != nil {
@@ -67,7 +91,7 @@ func printUsage(w *os.File) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Options:")
 	fmt.Fprintln(w, "  -d, --difficulty easy|normal|expert")
-	fmt.Fprintln(w, "      choose opponent difficulty (default: normal)")
+	fmt.Fprintln(w, "      choose opponent difficulty (default: last used)")
 	fmt.Fprintln(w, "  -s, --stats")
 	fmt.Fprintln(w, "      print game statistics and exit")
 	fmt.Fprintln(w, "  -v, --version")

@@ -16,11 +16,12 @@ const (
 )
 
 type Renderer struct {
-	colors bool
+	colors     bool
+	difficulty game.Difficulty
 }
 
-func NewRenderer(colors bool) Renderer {
-	return Renderer{colors: colors}
+func NewRenderer(colors bool, difficulty game.Difficulty) Renderer {
+	return Renderer{colors: colors, difficulty: difficulty}
 }
 
 func (r Renderer) Frame(state game.State, notice string) string {
@@ -188,7 +189,7 @@ func (r Renderer) die(value int, locked bool) []string {
 
 func (r Renderer) scoreboard(state game.State, highlightedPlayer game.Player, highlightedCategory game.Category) []string {
 	inner := make([]string, 0, 20)
-	inner = append(inner, r.style(fmt.Sprintf(" %-*s %7s %11s", scoreLabelWidth, "Category", "You", "Opponent"), ansiBold))
+	inner = append(inner, r.style(fmt.Sprintf(" %-*s %7s %11s", scoreLabelWidth, "Category", "You", opponentHeaderLabel(r.difficulty)), ansiBold))
 	inner = append(inner, r.separator())
 	for _, category := range game.Categories[:6] {
 		inner = append(inner, r.scoreRow(state, category, highlightedPlayer, highlightedCategory))
@@ -209,6 +210,26 @@ func (r Renderer) scoreboard(state game.State, highlightedPlayer game.Player, hi
 	}
 	lines = append(lines, "└"+strings.Repeat("─", rightWidth)+"┘")
 	return lines
+}
+
+func difficultyLabel(difficulty game.Difficulty) string {
+	switch difficulty {
+	case game.Easy:
+		return "Easy"
+	case game.Normal:
+		return "Normal"
+	case game.Expert:
+		return "Expert"
+	default:
+		return "Unknown"
+	}
+}
+
+func opponentHeaderLabel(difficulty game.Difficulty) string {
+	if difficulty == game.Normal {
+		return "Opponent"
+	}
+	return difficultyLabel(difficulty)
 }
 
 func (r Renderer) scoreRow(state game.State, category game.Category, highlightedPlayer game.Player, highlightedCategory game.Category) string {

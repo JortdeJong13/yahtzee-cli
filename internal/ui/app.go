@@ -17,7 +17,7 @@ func Run(input *os.File, output io.Writer, difficulty game.Difficulty) error {
 	defer terminal.Close()
 
 	reader := NewKeyReader(input)
-	renderer := NewRenderer(os.Getenv("NO_COLOR") == "")
+	renderer := NewRenderer(os.Getenv("NO_COLOR") == "", difficulty)
 	animator := NewRollAnimator()
 
 	for {

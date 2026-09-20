@@ -27,11 +27,45 @@ type DifficultyStats struct {
 }
 
 type file struct {
-	Version      int                        `json:"version"`
-	Difficulties map[string]DifficultyStats `json:"difficulties"`
+	Version        int                        `json:"version"`
+	Difficulties   map[string]DifficultyStats `json:"difficulties"`
+	LastDifficulty string                     `json:"last_difficulty,omitempty"`
 }
 
 var difficultyOrder = [...]game.Difficulty{game.Easy, game.Normal, game.Expert}
+
+func LastDifficulty() (game.Difficulty, bool, error) {
+	data, err := load()
+	if err != nil {
+		return game.Normal, false, fmt.Errorf("read last difficulty: %w", err)
+	}
+	if data.LastDifficulty == "" {
+		return game.Normal, false, nil
+	}
+
+	difficulty, ok := difficultyFromName(data.LastDifficulty)
+	if !ok {
+		return game.Normal, false, fmt.Errorf("unknown last difficulty %q", data.LastDifficulty)
+	}
+	return difficulty, true, nil
+}
+
+func SetLastDifficulty(difficulty game.Difficulty) error {
+	name, ok := difficultyName(difficulty)
+	if !ok {
+		return fmt.Errorf("set last difficulty: unknown difficulty %d", difficulty)
+	}
+
+	data, err := load()
+	if err != nil {
+		return fmt.Errorf("set last difficulty: %w", err)
+	}
+	data.LastDifficulty = name
+	if err := save(data); err != nil {
+		return fmt.Errorf("set last difficulty: %w", err)
+	}
+	return nil
+}
 
 func Record(difficulty game.Difficulty, outcome game.Outcome, score int) (bool, error) {
 	name, ok := difficultyName(difficulty)
@@ -187,6 +221,11 @@ func validate(data file) error {
 			return fmt.Errorf("stats file has invalid results for %s", name)
 		}
 	}
+	if data.LastDifficulty != "" {
+		if _, ok := difficultyFromName(data.LastDifficulty); !ok {
+			return fmt.Errorf("stats file has unknown last difficulty %q", data.LastDifficulty)
+		}
+	}
 	return nil
 }
 
@@ -232,6 +271,19 @@ func difficultyName(difficulty game.Difficulty) (string, bool) {
 		return "", false
 	}
 	return difficultyString(difficulty), true
+}
+
+func difficultyFromName(name string) (game.Difficulty, bool) {
+	switch name {
+	case "easy":
+		return game.Easy, true
+	case "normal":
+		return game.Normal, true
+	case "expert":
+		return game.Expert, true
+	default:
+		return game.Normal, false
+	}
 }
 
 func difficultyString(difficulty game.Difficulty) string {
