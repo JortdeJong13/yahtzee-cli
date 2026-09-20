@@ -33,20 +33,21 @@ type file struct {
 
 var difficultyOrder = [...]game.Difficulty{game.Easy, game.Normal, game.Expert}
 
-func Record(difficulty game.Difficulty, outcome game.Outcome, score int) error {
+func Record(difficulty game.Difficulty, outcome game.Outcome, score int) (bool, error) {
 	name, ok := difficultyName(difficulty)
 	if !ok {
-		return fmt.Errorf("record stats: unknown difficulty %d", difficulty)
+		return false, fmt.Errorf("record stats: unknown difficulty %d", difficulty)
 	}
 	if score < 0 {
-		return fmt.Errorf("record stats: invalid score %d", score)
+		return false, fmt.Errorf("record stats: invalid score %d", score)
 	}
 
 	data, err := load()
 	if err != nil {
-		return fmt.Errorf("record stats: %w", err)
+		return false, fmt.Errorf("record stats: %w", err)
 	}
 
+	newHighScore := totalPlayed(data) > 0 && score > highestScore(data)
 	entry := data.Difficulties[name]
 	entry.Played++
 	switch outcome {
@@ -56,7 +57,7 @@ func Record(difficulty game.Difficulty, outcome game.Outcome, score int) error {
 		entry.Draws++
 	case game.OpponentWins:
 	default:
-		return errors.New("record stats: game is not complete")
+		return false, errors.New("record stats: game is not complete")
 	}
 	if score > entry.HighestScore {
 		entry.HighestScore = score
@@ -64,9 +65,9 @@ func Record(difficulty game.Difficulty, outcome game.Outcome, score int) error {
 	data.Difficulties[name] = entry
 
 	if err := save(data); err != nil {
-		return fmt.Errorf("record stats: %w", err)
+		return false, fmt.Errorf("record stats: %w", err)
 	}
-	return nil
+	return newHighScore, nil
 }
 
 func Print(w io.Writer, colors bool) error {
@@ -75,18 +76,11 @@ func Print(w io.Writer, colors bool) error {
 		return fmt.Errorf("read stats: %w", err)
 	}
 
-	totalPlayed := 0
-	highestScore := 0
-	for _, difficulty := range difficultyOrder {
-		entry := data.Difficulties[difficultyString(difficulty)]
-		totalPlayed += entry.Played
-		if entry.HighestScore > highestScore {
-			highestScore = entry.HighestScore
-		}
-	}
+	totalPlayed := totalPlayed(data)
+	highestScore := highestScore(data)
 
 	var builder strings.Builder
-	fmt.Fprintf(&builder, "\nGames played: %d\nHighest score: %d\n\n", totalPlayed, highestScore)
+	fmt.Fprintf(&builder, "\nGames played: %d\nHigh score: %d\n\n", totalPlayed, highestScore)
 	builder.WriteString("┌" + strings.Repeat("─", innerWidth) + "┐\n")
 	builder.WriteString("│" + fmt.Sprintf(" %-12s %7s %6s %8s %7s  %8s ", "Difficulty", "Played", "Wins", "Losses", "Draws", "Win rate") + "│\n")
 	separator := strings.Repeat("─", innerWidth)
@@ -194,6 +188,24 @@ func validate(data file) error {
 		}
 	}
 	return nil
+}
+
+func highestScore(data file) int {
+	highest := 0
+	for _, difficulty := range difficultyOrder {
+		if score := data.Difficulties[difficultyString(difficulty)].HighestScore; score > highest {
+			highest = score
+		}
+	}
+	return highest
+}
+
+func totalPlayed(data file) int {
+	total := 0
+	for _, difficulty := range difficultyOrder {
+		total += data.Difficulties[difficultyString(difficulty)].Played
+	}
+	return total
 }
 
 func newFile() file {

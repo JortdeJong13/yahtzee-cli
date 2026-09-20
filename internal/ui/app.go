@@ -34,12 +34,13 @@ func Run(input *os.File, output io.Writer, difficulty game.Difficulty) error {
 			return nil
 		}
 
-		finalFrame := renderer.FinalFrame(current.State())
-		if err := terminal.Persist(finalFrame); err != nil {
+		state := current.State()
+		newHighScore, err := stats.Record(difficulty, state.Outcome, state.Scores[game.You].Total())
+		if err != nil {
 			return err
 		}
-		state := current.State()
-		if err := stats.Record(difficulty, state.Outcome, state.Scores[game.You].Total()); err != nil {
+		finalFrame := renderer.FinalFrame(state, newHighScore)
+		if err := terminal.Persist(finalFrame); err != nil {
 			return err
 		}
 		if err := terminal.BeginGame(); err != nil {

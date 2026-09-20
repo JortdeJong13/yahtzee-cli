@@ -31,13 +31,17 @@ func (r Renderer) FrameWithScoreHighlight(state game.State, notice string, playe
 	return r.frame(state, notice, true, player, category)
 }
 
-func (r Renderer) FinalFrame(state game.State) string {
+func (r Renderer) FinalFrame(state game.State, newHighScore bool) string {
 	state.Locked = [game.DiceCount]bool{}
-	return r.frame(state, "", false, game.You, game.CategoryCount)
+	return r.frameWithHighScore(state, "", false, game.You, game.CategoryCount, newHighScore)
 }
 
 func (r Renderer) frame(state game.State, notice string, includeControls bool, highlightedPlayer game.Player, highlightedCategory game.Category) string {
-	left := r.leftColumn(state, notice)
+	return r.frameWithHighScore(state, notice, includeControls, highlightedPlayer, highlightedCategory, false)
+}
+
+func (r Renderer) frameWithHighScore(state game.State, notice string, includeControls bool, highlightedPlayer game.Player, highlightedCategory game.Category, newHighScore bool) string {
+	left := r.leftColumn(state, notice, newHighScore)
 	right := r.scoreboard(state, highlightedPlayer, highlightedCategory)
 	lines := make([]string, 0, len(left))
 	for i := 0; i < len(left) || i < len(right); i++ {
@@ -57,7 +61,7 @@ func (r Renderer) frame(state game.State, notice string, includeControls bool, h
 	return strings.Join(lines, "\r\n") + "\r\n"
 }
 
-func (r Renderer) leftColumn(state game.State, notice string) []string {
+func (r Renderer) leftColumn(state game.State, notice string, newHighScore bool) []string {
 	lines := make([]string, 0, 21)
 	lines = append(lines, "")
 	diceLines := r.diceBlock(state)
@@ -65,7 +69,16 @@ func (r Renderer) leftColumn(state game.State, notice string) []string {
 	lines = append(lines, "")
 
 	if notice == "" {
-		lines = append(lines, "   "+r.turnStatus(state))
+		status := "   " + r.turnStatus(state)
+		if newHighScore {
+			message := r.style("New high score!", ansiBold+ansiGreen)
+			gap := leftWidth - visibleWidth(status) - visibleWidth(message)
+			if gap < 1 {
+				gap = 1
+			}
+			status += strings.Repeat(" ", gap) + message
+		}
+		lines = append(lines, status)
 	} else {
 		lines = append(lines, "   "+r.style(notice, ansiAccent))
 	}
