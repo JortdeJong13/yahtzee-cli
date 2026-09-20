@@ -37,6 +37,21 @@ yahtzee --difficulty expert
 
 Easy and normal occasionally choose a near-best move. Expert always chooses the highest-value move and is deterministic apart from the dice rolls.
 
+The difficulty flag also has a short form:
+
+```sh
+yahtzee -d expert
+```
+
+View completed-game statistics with:
+
+```sh
+yahtzee --stats
+yahtzee -s
+```
+
+Use `yahtzee --help` for all available options.
+
 ## How to play
 
 ```text

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/JortdeJong13/yahtzee-cli/internal/game"
+	"github.com/JortdeJong13/yahtzee-cli/internal/stats"
 )
 
 func Run(input *os.File, output io.Writer, difficulty game.Difficulty) error {
@@ -35,6 +36,10 @@ func Run(input *os.File, output io.Writer, difficulty game.Difficulty) error {
 
 		finalFrame := renderer.FinalFrame(current.State())
 		if err := terminal.Persist(finalFrame); err != nil {
+			return err
+		}
+		state := current.State()
+		if err := stats.Record(difficulty, state.Outcome, state.Scores[game.You].Total()); err != nil {
 			return err
 		}
 		if err := terminal.BeginGame(); err != nil {
