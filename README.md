@@ -35,7 +35,7 @@ yahtzee --difficulty easy
 yahtzee --difficulty expert
 ```
 
-Easy and normal occasionally choose a near-best move. Expert always chooses the highest-value move and is deterministic apart from the dice rolls.
+Easy looks one reroll ahead and scores immediate outcomes to approximate a beginner player. Normal evaluates the full turn but occasionally chooses a bounded near-best move. Expert always chooses the highest-value move and is deterministic apart from the dice rolls.
 
 The difficulty flag also has a short form:
 

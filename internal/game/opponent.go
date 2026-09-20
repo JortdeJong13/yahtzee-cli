@@ -5,17 +5,21 @@ import (
 	"sort"
 )
 
-// PlayOpponent takes one complete expected-value turn. It evaluates every
-// possible set of dice to keep across all remaining rolls, then estimates the
-// rest of the game from precomputed upper- and lower-section continuations.
+// PlayOpponent takes one complete opponent turn. Normal and Expert evaluate
+// every possible set of dice to keep across all remaining rolls, while Easy
+// only looks one reroll ahead and scores immediate outcomes. Normal and Expert
+// estimate the rest of the game from precomputed upper- and lower-section
+// continuations.
 func (g *Game) PlayOpponent(observer func()) {
 	if g.outcome != InProgress || g.turn != Opponent {
 		return
 	}
 
 	evaluator := opponentEvaluator{
-		card: g.scores[Opponent],
-		memo: make(map[opponentValueKey]float64),
+		card:             g.scores[Opponent],
+		memo:             make(map[opponentValueKey]float64),
+		maxLookahead:     opponentMaxLookahead(g.difficulty),
+		immediateScoring: g.difficulty == Easy,
 	}
 	var category Category
 	for g.rollsLeft > 0 {
@@ -49,8 +53,10 @@ func (g *Game) PlayOpponent(observer func()) {
 }
 
 type opponentEvaluator struct {
-	card ScoreCard
-	memo map[opponentValueKey]float64
+	card             ScoreCard
+	memo             map[opponentValueKey]float64
+	maxLookahead     int
+	immediateScoring bool
 }
 
 type opponentDecision struct {
@@ -87,14 +93,21 @@ func (e *opponentEvaluator) decide(dice Dice, rollsLeft int, difficulty Difficul
 	return alternatives[rng.Intn(len(alternatives))]
 }
 
+func opponentMaxLookahead(difficulty Difficulty) int {
+	if difficulty == Easy {
+		return 1
+	}
+	return 0
+}
+
 func difficultyLimits(difficulty Difficulty) (mistakeChance, maximumLoss float64) {
 	switch difficulty {
 	case Easy:
-		return 0.35, 5
+		return 0, 0
 	case Expert:
 		return 0, 0
 	default:
-		return 0.18, 3
+		return 0.25, 4
 	}
 }
 
@@ -111,6 +124,7 @@ func (e *opponentEvaluator) rankedDecisions(dice Dice, rollsLeft int) []opponent
 	}
 
 	if rollsLeft > 0 {
+		rollsLeft = e.lookahead(rollsLeft)
 		diceCounts := opponentDiceCounts(dice)
 		opponentForEachKeep(diceCounts, func(keep [6]uint8) {
 			decisions = append(decisions, opponentDecision{
@@ -124,6 +138,13 @@ func (e *opponentEvaluator) rankedDecisions(dice Dice, rollsLeft int) []opponent
 		return decisions[i].value > decisions[j].value
 	})
 	return decisions
+}
+
+func (e *opponentEvaluator) lookahead(rollsLeft int) int {
+	if e.maxLookahead > 0 && rollsLeft > e.maxLookahead {
+		return e.maxLookahead
+	}
+	return rollsLeft
 }
 
 func (e *opponentEvaluator) expectedAfterKeep(keep [6]uint8, rollsLeft int) float64 {
@@ -183,7 +204,9 @@ func (e *opponentEvaluator) categoryValue(dice Dice, category Category) (float64
 	nextCard.Filled[category] = true
 
 	value := float64(score)
-	value += opponentContinuationValue(nextCard) - opponentContinuationValue(e.card)
+	if !e.immediateScoring {
+		value += opponentContinuationValue(nextCard) - opponentContinuationValue(e.card)
+	}
 	if isYahtzee(dice) && e.card.Filled[Yahtzee] && e.card.Values[Yahtzee] == 50 {
 		value += YahtzeeBonus
 	}
