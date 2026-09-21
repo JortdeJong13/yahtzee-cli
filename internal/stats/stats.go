@@ -16,6 +16,7 @@ const (
 	currentVersion = 1
 	innerWidth     = 56
 	ansiReset      = "\x1b[0m"
+	ansiBold       = "\x1b[1m"
 	ansiDim        = "\x1b[2m"
 )
 
@@ -116,7 +117,11 @@ func Print(w io.Writer, colors bool) error {
 	var builder strings.Builder
 	fmt.Fprintf(&builder, "\nGames played: %d\nHigh score: %d\n\n", totalPlayed, highestScore)
 	builder.WriteString("┌" + strings.Repeat("─", innerWidth) + "┐\n")
-	builder.WriteString("│" + fmt.Sprintf(" %-12s %7s %6s %8s %7s  %8s ", "Difficulty", "Played", "Wins", "Losses", "Draws", "Win rate") + "│\n")
+	header := fmt.Sprintf(" %-12s %7s %6s %8s %7s  %8s ", "Difficulty", "Played", "Wins", "Losses", "Draws", "Win rate")
+	if colors {
+		header = ansiBold + header + ansiReset
+	}
+	builder.WriteString("│" + header + "│\n")
 	separator := strings.Repeat("─", innerWidth)
 	if colors {
 		separator = ansiDim + separator + ansiReset
