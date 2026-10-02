@@ -35,7 +35,9 @@ yahtzee --difficulty easy
 yahtzee --difficulty expert
 ```
 
-Easy looks one reroll ahead and scores immediate outcomes to approximate a beginner player. Normal evaluates the full turn but occasionally chooses a bounded near-best move. Expert always chooses the highest-value move and is deterministic apart from the dice rolls.
+Every difficulty chooses the best move it can see, with no deliberate random mistakes. Easy looks one reroll ahead and values points earned now, including bonuses. Normal evaluates the full turn and gives future scorecard opportunities a reduced weight. Expert evaluates the full turn with the full future-score estimate; that estimate is approximate rather than a complete solution of the game.
+
+For the opponent design, decision checks, and score calibration method, see [the opponent design notes](docs/opponent-design.md).
 
 The difficulty flag also has a short form:
 

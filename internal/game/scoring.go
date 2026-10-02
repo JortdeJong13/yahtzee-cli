@@ -26,6 +26,24 @@ func (s ScoreCard) ScoreFor(dice Dice, category Category) (int, bool) {
 	return scoreCategory(dice, category), true
 }
 
+// applyScore records a legal score and returns all points earned now.
+func (s *ScoreCard) applyScore(dice Dice, category Category) (int, bool) {
+	score, ok := s.ScoreFor(dice, category)
+	if !ok {
+		return 0, false
+	}
+	previousBonus := s.Bonus()
+	extraYahtzee := isYahtzee(dice) && s.Filled[Yahtzee] && s.Values[Yahtzee] == 50
+	s.Values[category] = score
+	s.Filled[category] = true
+	earned := score + s.Bonus() - previousBonus
+	if extraYahtzee {
+		s.YahtzeeBonuses++
+		earned += YahtzeeBonus
+	}
+	return earned, true
+}
+
 func scoreCategory(dice Dice, category Category) int {
 	counts := countDice(dice)
 	total := diceTotal(dice)

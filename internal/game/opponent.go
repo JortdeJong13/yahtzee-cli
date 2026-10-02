@@ -1,37 +1,31 @@
 package game
 
-import (
-	"math/rand"
-	"sort"
-)
+import "sort"
 
 // PlayOpponent takes one complete opponent turn. Normal and Expert evaluate
 // every possible set of dice to keep across all remaining rolls, while Easy
-// only looks one reroll ahead and scores immediate outcomes. Normal and Expert
-// estimate the rest of the game from precomputed upper- and lower-section
-// continuations.
+// only looks one reroll ahead and values points earned now. Normal discounts
+// future scorecard opportunities, while Expert gives them full weight. All
+// difficulties choose deterministically apart from the dice rolls.
 func (g *Game) PlayOpponent(observer func()) {
 	if g.outcome != InProgress || g.turn != Opponent {
 		return
 	}
 
-	evaluator := opponentEvaluator{
-		card:             g.scores[Opponent],
-		memo:             make(map[opponentValueKey]float64),
-		maxLookahead:     opponentMaxLookahead(g.difficulty),
-		immediateScoring: g.difficulty == Easy,
-	}
-	var category Category
+	evaluator := newOpponentEvaluator(g.scores[Opponent], g.difficulty)
 	for g.rollsLeft > 0 {
 		g.Roll()
 		if observer != nil {
 			observer()
 		}
 
-		decision := evaluator.decide(g.dice, g.rollsLeft, g.difficulty, g.opponentRNG)
+		decision := evaluator.decide(g.dice, g.rollsLeft)
 		if decision.score {
-			category = decision.category
-			break
+			g.Score(decision.category)
+			if observer != nil {
+				observer()
+			}
+			return
 		}
 
 		g.locked = decision.keep
@@ -39,24 +33,22 @@ func (g *Game) PlayOpponent(observer func()) {
 			observer()
 		}
 	}
-
-	if !g.rolled {
-		return
-	}
-	if g.rollsLeft == 0 || category >= CategoryCount || g.scores[Opponent].Filled[category] {
-		category, _ = evaluator.bestCategory(g.dice)
-	}
-	g.Score(category)
-	if observer != nil {
-		observer()
-	}
 }
 
 type opponentEvaluator struct {
-	card             ScoreCard
-	memo             map[opponentValueKey]float64
-	maxLookahead     int
-	immediateScoring bool
+	card         ScoreCard
+	memo         map[opponentValueKey]float64
+	maxLookahead int
+	futureWeight float64
+}
+
+func newOpponentEvaluator(card ScoreCard, difficulty Difficulty) opponentEvaluator {
+	return opponentEvaluator{
+		card:         card,
+		memo:         make(map[opponentValueKey]float64),
+		maxLookahead: opponentMaxLookahead(difficulty),
+		futureWeight: opponentFutureWeight(difficulty),
+	}
 }
 
 type opponentDecision struct {
@@ -71,43 +63,25 @@ type opponentValueKey struct {
 	rollsLeft uint8
 }
 
-func (e *opponentEvaluator) decide(dice Dice, rollsLeft int, difficulty Difficulty, rng *rand.Rand) opponentDecision {
-	decisions := e.rankedDecisions(dice, rollsLeft)
-	best := decisions[0]
-
-	mistakeChance, maximumLoss := difficultyLimits(difficulty)
-	if mistakeChance == 0 || rng.Float64() >= mistakeChance {
-		return best
-	}
-
-	alternatives := make([]opponentDecision, 0, len(decisions)-1)
-	for _, decision := range decisions[1:] {
-		if best.value-decision.value > maximumLoss {
-			break
-		}
-		alternatives = append(alternatives, decision)
-	}
-	if len(alternatives) == 0 {
-		return best
-	}
-	return alternatives[rng.Intn(len(alternatives))]
+func (e *opponentEvaluator) decide(dice Dice, rollsLeft int) opponentDecision {
+	return e.rankedDecisions(dice, rollsLeft)[0]
 }
 
 func opponentMaxLookahead(difficulty Difficulty) int {
 	if difficulty == Easy {
 		return 1
 	}
-	return 0
+	return MaximumRolls - 1
 }
 
-func difficultyLimits(difficulty Difficulty) (mistakeChance, maximumLoss float64) {
+func opponentFutureWeight(difficulty Difficulty) float64 {
 	switch difficulty {
 	case Easy:
-		return 0, 0
+		return 0
 	case Expert:
-		return 0, 0
+		return 1
 	default:
-		return 0.25, 4
+		return 0.4
 	}
 }
 
@@ -137,7 +111,29 @@ func (e *opponentEvaluator) rankedDecisions(dice Dice, rollsLeft int) []opponent
 	sort.SliceStable(decisions, func(i, j int) bool {
 		return decisions[i].value > decisions[j].value
 	})
+	// Group ties relative to the highest value before ordering them, so the
+	// floating-point tolerance cannot make the sort comparator non-transitive.
+	tied := 1
+	for tied < len(decisions) && decisions[0].value-decisions[tied].value <= 1e-9 {
+		tied++
+	}
+	sort.SliceStable(decisions[:tied], func(i, j int) bool {
+		if decisions[i].score != decisions[j].score {
+			return decisions[i].score
+		}
+		return opponentHeldCount(decisions[i].keep) > opponentHeldCount(decisions[j].keep)
+	})
 	return decisions
+}
+
+func opponentHeldCount(keep [DiceCount]bool) int {
+	held := 0
+	for _, locked := range keep {
+		if locked {
+			held++
+		}
+	}
+	return held
 }
 
 func (e *opponentEvaluator) lookahead(rollsLeft int) int {
@@ -178,37 +174,19 @@ func (e *opponentEvaluator) bestValue(dice Dice, rollsLeft int) float64 {
 	return value
 }
 
-func (e *opponentEvaluator) bestCategory(dice Dice) (Category, float64) {
-	bestCategory := Categories[0]
-	bestValue := 0.0
-	found := false
-	for _, category := range Categories {
-		score, ok := e.categoryValue(dice, category)
-		if ok && (!found || score > bestValue) {
-			bestCategory = category
-			bestValue = score
-			found = true
-		}
-	}
-	return bestCategory, bestValue
-}
-
 func (e *opponentEvaluator) categoryValue(dice Dice, category Category) (float64, bool) {
-	score, ok := e.card.ScoreFor(dice, category)
+	nextCard := e.card
+	earned, ok := nextCard.applyScore(dice, category)
 	if !ok {
 		return 0, false
 	}
 
-	nextCard := e.card
-	nextCard.Values[category] = score
-	nextCard.Filled[category] = true
-
-	value := float64(score)
-	if !e.immediateScoring {
-		value += opponentContinuationValue(nextCard) - opponentContinuationValue(e.card)
-	}
-	if isYahtzee(dice) && e.card.Filled[Yahtzee] && e.card.Values[Yahtzee] == 50 {
-		value += YahtzeeBonus
+	value := float64(earned)
+	if e.futureWeight > 0 {
+		// Earned bonuses belong to this move, rather than discounted future points.
+		currentFuture := opponentContinuationValue(e.card) - float64(e.card.Bonus())
+		nextFuture := opponentContinuationValue(nextCard) - float64(nextCard.Bonus())
+		value += e.futureWeight * (nextFuture - currentFuture)
 	}
 	return value, true
 }

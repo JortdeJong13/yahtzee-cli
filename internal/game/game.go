@@ -156,17 +156,16 @@ type State struct {
 }
 
 type Game struct {
-	dice        Dice
-	locked      [DiceCount]bool
-	turn        Player
-	rollsLeft   int
-	rolled      bool
-	scores      [2]ScoreCard
-	selected    Category
-	outcome     Outcome
-	rng         *rand.Rand
-	opponentRNG *rand.Rand
-	difficulty  Difficulty
+	dice       Dice
+	locked     [DiceCount]bool
+	turn       Player
+	rollsLeft  int
+	rolled     bool
+	scores     [2]ScoreCard
+	selected   Category
+	outcome    Outcome
+	rng        *rand.Rand
+	difficulty Difficulty
 }
 
 func New() *Game {
@@ -183,9 +182,8 @@ func NewWithSeed(seed int64) *Game {
 
 func NewWithSeedAndDifficulty(seed int64, difficulty Difficulty) *Game {
 	g := &Game{
-		rng:         rand.New(rand.NewSource(seed)),
-		opponentRNG: rand.New(rand.NewSource(seed ^ 0x5deece66d)),
-		difficulty:  difficulty,
+		rng:        rand.New(rand.NewSource(seed)),
+		difficulty: difficulty,
 	}
 	for i := range g.dice {
 		g.dice[i] = g.randomDie()
@@ -306,15 +304,9 @@ func (g *Game) Score(category Category) bool {
 		return false
 	}
 	card := &g.scores[g.turn]
-	score, ok := card.ScoreFor(g.dice, category)
+	_, ok := card.applyScore(g.dice, category)
 	if !ok {
 		return false
-	}
-	bonusYahtzee := isYahtzee(g.dice) && card.Filled[Yahtzee] && card.Values[Yahtzee] == 50
-	card.Values[category] = score
-	card.Filled[category] = true
-	if bonusYahtzee {
-		card.YahtzeeBonuses++
 	}
 
 	if g.scores[You].Complete() && g.scores[Opponent].Complete() {

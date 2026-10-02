@@ -19,7 +19,7 @@
 
 - The player starts. The initial five dice are displayed but do not count as a roll.
 - Each turn allows up to three rolls. Dice values carry into the next turn; locks and roll state reset.
-- The opponent has no score pointer. Normal and Expert use full-turn expectimax and precomputed upper/lower scorecard continuations; Easy looks one reroll ahead and scores immediate outcomes. `--difficulty normal` is the default; Normal occasionally chooses bounded near-best moves, while Expert is deterministic apart from dice rolls.
+- The opponent has no score pointer. Every level chooses deterministically apart from dice rolls. Easy looks one reroll ahead and values all points earned now, including bonuses. Normal and Expert use full-turn expectimax and precomputed upper/lower scorecard continuations, with future weights of 0.4 and 1 respectively. `--difficulty normal` is the default. Difficulty must not introduce random mistakes or change scoring rules.
 - Use classic Yahtzee rules: 13 categories, upper bonus at 63, Yahtzee for 50, and 100 points for each later Yahtzee after the Yahtzee box contains 50.
 - Later Yahtzees use the Joker rules. If the matching upper category is open, it is required; otherwise use an open lower category. If all lower categories are filled, an open upper category scores zero. The same placement rules apply after a Yahtzee box scored zero, without the bonus.
 - The live board uses the ANSI alternate screen. Completed games persist in terminal history; in-progress quits do not. Quit requires two `q` presses.
@@ -37,6 +37,7 @@
 ```sh
 gofmt -w cmd/yahtzee/main.go internal/game/*.go internal/ui/*.go
 go vet ./...
+go test ./...
 go build ./...
 ```
 
@@ -44,8 +45,17 @@ Exercise the interactive CLI manually in a real terminal. If the environment can
 
 ```sh
 GOCACHE=/tmp/yahtzee-go-cache GOMODCACHE=/tmp/yahtzee-go-modcache go vet ./...
+GOCACHE=/tmp/yahtzee-go-cache GOMODCACHE=/tmp/yahtzee-go-modcache go test ./...
 GOCACHE=/tmp/yahtzee-go-cache GOMODCACHE=/tmp/yahtzee-go-modcache go build ./...
 ```
+
+After opponent changes, run the opt-in score calibration on separate validation seeds:
+
+```sh
+go test -tags botcheck ./internal/game -run TestOpponentCalibration -count=1 -v
+```
+
+Use `-opponent-games`, `-opponent-seed`, and `-opponent-sweep` to adjust the sample and compare future weights. Decision and rule checks must pass before accepting a score target. Do not regenerate the continuation tables unless their model or format changes.
 
 ## Releases
 
